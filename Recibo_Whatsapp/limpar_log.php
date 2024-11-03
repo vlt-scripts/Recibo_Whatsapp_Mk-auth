@@ -1,11 +1,13 @@
 <?php
 $logFile = '/opt/mk-auth/dados/Recibo_Whatsapp/log_pagamentos.txt';
 if (file_exists($logFile)) {
-    file_put_contents($logFile, ''); // Limpa o conte˙do do arquivo de log
-    echo "Log limpo com sucesso!";
+    file_put_contents($logFile, ''); // Limpa o conte√∫do do arquivo de log
+    echo "<script>alert('Log limpo com sucesso!');</script>";
 } else {
-    echo "Arquivo de log n„o encontrado.";
+    echo "<script>alert('Arquivo de log n√£o encontrado.');</script>";
 }
-header("Location: {$_SERVER['HTTP_REFERER']}"); // Redireciona de volta para a p·gina anterior
+
+// Redireciona para a p√°gina anterior usando JavaScript
+echo "<script>window.location.href = '{$_SERVER['HTTP_REFERER']}';</script>";
 exit;
 ?>
