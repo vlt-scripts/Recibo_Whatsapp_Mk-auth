@@ -600,7 +600,7 @@ $conn->close();
         </button>
     </form>
 </div>
-<div class="log-container">
+<div class="container" style="background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; border-radius: 5px; max-height: 300px; overflow-y: scroll; color: blue;">
     <pre><?php
         $logFile = '/opt/mk-auth/dados/Recibo_Whatsapp/log_pagamentos.txt';
         if (file_exists($logFile)) {
