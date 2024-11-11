@@ -58,7 +58,7 @@ if ($stmt) {
         $formapag = $row['formapag'];
 
         // Busca o nome e o número de celular do cliente com base no login
-        $clienteQuery = "SELECT nome, celular FROM sis_cliente WHERE login = ?";
+        $clienteQuery = "SELECT nome, celular, cpf_cnpj FROM sis_cliente WHERE login = ?";
         $clienteStmt = $con->prepare($clienteQuery);
         
         if ($clienteStmt) {
@@ -67,19 +67,34 @@ if ($stmt) {
             $clienteResult = $clienteStmt->get_result();
             $celular = "";
             $nome = "";
+			$cpfCnpj = "";
 
             if ($clienteRow = $clienteResult->fetch_assoc()) {
                 $nome = $clienteRow['nome'];
                 $celular = formatarNumero($clienteRow['celular']);
-            }
-
+				
+		    // Verifica se é CPF (11 dígitos) ou CNPJ (14 dígitos) e aplica a formatação apropriada
+            $cpfCnpj = preg_replace(
+                strlen($clienteRow['cpf_cnpj']) === 11 
+                ? "/(\d{3})(\d{3})(\d{3})(\d{2})/" 
+                : "/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/", 
+                strlen($clienteRow['cpf_cnpj']) === 11 
+                ? '$1.$2.$3-$4' 
+                : '$1.$2.$3/$4-$5', 
+            $clienteRow['cpf_cnpj']
+        );
+    }
+            
             // Define a mensagem com o texto e emojis
             $mensagem = "💵 *CONFIRMAÇÃO DE PAGAMENTO*\n\n".
                         "👤 *Cliente*: $nome\n".
+						"📑 *CPF/CNPJ*: $cpfCnpj\n".
                         "✅ *Pagamento recebido em*: $datapag\n".
                         "📅 *Fatura com vencimento em*: $datavenc\n".
                         "💰 *Valor da fatura*: R$ $valor\n".
-                        "💸 *Valor do pagamento*: R$ $valorpag\n\n".               
+                        "💸 *Valor do pagamento*: R$ $valorpag\n".       
+                        "👤 *Pagamento recebido por*: $coletor\n".	
+                        "💳 *Forma de pagamento*: $formapag\n\n".						
                         "*Atenciosamente, Nome do Seu Provedor Aqui* 🤝\n".
                         "••••••••••••••••••••••••••••••••••\n".
                         "_Mensagem gerada automaticamente pelo sistema._";

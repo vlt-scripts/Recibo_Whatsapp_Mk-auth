@@ -254,11 +254,13 @@ if (isset($_POST['salvar_configuracoes'])) {
 
 <style>
     .container {
-        width: 100%;
-        margin: 20px auto;
+        max-width: 1300px; /* Aumenta a largura máxima do contêiner */
+        width: 100%; /* Define a largura para 90% da tela, adaptando-se a telas menores */
+        margin: 20px auto; /* Centraliza o contêiner */
         background: #fff;
-        padding: 20px;
+        padding: 30px; /* Ajusta o padding para um espaçamento interno confortável */
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        border-radius: 8px; /* Deixa os cantos ligeiramente arredondados */
     }
     h2 {
         text-align: center;
@@ -338,38 +340,38 @@ if (isset($_POST['salvar_configuracoes'])) {
         border-radius: 5px;
         cursor: pointer;
     }
-	.pagination {
-    display: flex;
-    justify-content: center;
-    margin: 20px 0;
-    list-style: none;
-    padding: 0;
-}
+	    .pagination {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+        list-style: none;
+        padding: 0;
+    }
 
-.pagination li {
-    margin: 0 5px;
-}
+        .pagination li {
+        margin: 0 5px;
+    }
 
-.pagination a,
-.pagination strong {
-    display: inline-block;
-    padding: 8px 12px;
-    text-decoration: none;
-    border-radius: 5px;
-    color: #333;
-    background-color: #f2f2f2;
-    border: 1px solid #ddd;
-    transition: background-color 0.3s ease;
-}
+       .pagination a,
+       .pagination strong {
+        display: inline-block;
+        padding: 8px 12px;
+        text-decoration: none;
+        border-radius: 5px;
+        color: #333;
+        background-color: #f2f2f2;
+        border: 1px solid #ddd;
+        transition: background-color 0.3s ease;
+    }
 
-.pagination a:hover {
-    background-color: #ddd;
-}
+        .pagination a:hover {
+         background-color: #ddd;
+    }
 
-.pagination strong {
-    color: white;
-    background-color: #4CAF50; /* Destaque para a página atual */
-    font-weight: bold;
+        .pagination strong {
+         color: white;
+         background-color: #4CAF50; /* Destaque para a página atual */
+         font-weight: bold;
 }
 </style>
 
@@ -526,38 +528,49 @@ if ($stmt) {
     echo "<table>
             <tr>
                 <th>ID</th>
-				<th>Data</th>
+                <th>Data</th>
                 <th>Login</th>
                 <th>Coletor</th>
-                <th>Data Vencimento</th>
                 <th>Data Pagamento</th>
+				<th>Data Vencimento</th>
                 <th>Valor</th>
                 <th>Valor Pago</th>
                 <th>Forma de Pagamento</th>
                 <th>Envio</th>
             </tr>";
-    
+
+    // Define um contador de linha
+    $linha = 0;
+
     // Loop pelos resultados
     while ($stmt->fetch()) {
         $envioStatus = $envio == 1 
             ? "<span style='color: green; font-weight: bold;'>Sim</span>" 
             : "<span style='color: red; font-weight: bold;'>Não</span>";
-			
-	    // Formata a data no formato preferido "01-11-2024 12:46:53"
-        $dataFormatada = (new DateTime($data))->format('d-m-Y H:i:s');
         
-        echo "<tr>
+        // Formata a data no formato preferido "01-11-2024 12:46:53"
+        $dataFormatada = (new DateTime($data))->format('d-m-Y H:i:s');
+		$datavencFormatada = (new DateTime($datavenc))->format('d-m-Y');
+		$datapagFormatada = (new DateTime($datapag))->format('d-m-Y H:i:s');
+        
+        // Alterna a cor do texto entre verde escuro e azul escuro e adiciona negrito
+        $textoCor = ($linha % 2 == 0) ? "color: #556B2F; font-weight: bold;" : "color: #4682B4; font-weight: bold;";
+        
+        echo "<tr style='$textoCor'>
                 <td>" . htmlspecialchars($id) . "</td>
-				<td>" . htmlspecialchars($dataFormatada) . "</td>
+                <td>" . htmlspecialchars($dataFormatada) . "</td>
                 <td>" . htmlspecialchars($login) . "</td>
                 <td>" . htmlspecialchars($coletor) . "</td>
-                <td>" . htmlspecialchars($datavenc) . "</td>
-                <td>" . htmlspecialchars($datapag) . "</td>
+                <td>" . htmlspecialchars($datapagFormatada) . "</td>
+                <td>" . htmlspecialchars($datavencFormatada) . "</td>
                 <td>" . htmlspecialchars($valor) . "</td>
                 <td>" . htmlspecialchars($valorpag) . "</td>
                 <td>" . htmlspecialchars($formapag) . "</td>
                 <td>" . $envioStatus . "</td>
               </tr>";
+        
+        // Incrementa o contador de linha
+        $linha++;
     }
     echo "</table>";
 
@@ -579,7 +592,6 @@ for ($pagina = 1; $pagina <= $total_paginas; $pagina++) {
     }
 }
 echo '</ul>';
-
 
 // Fecha a conexão ao final de todas as operações
 $conn->close();
@@ -614,6 +626,13 @@ $conn->close();
                 if (strpos($line, 'Mensagem enviada com sucesso') !== false) {
                     // Adiciona a cor verde e estilo bold para as mensagens enviadas com sucesso
                     $line = "<span style='color: green; font-weight: bold;'>" . htmlspecialchars($line) . "</span>";
+                    
+                    // Adiciona cor darkcyan para a data, azul para o nome do cliente, e darkslateblue para o número de telefone no formato desejado
+                    $line = preg_replace(
+                        "/\[(\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2})\] Mensagem enviada com sucesso para (.+?) \((\d{2})(\d{2})(\d{5})(\d{4})\)/",
+                        "[<span style='color: darkcyan; font-weight: bold;'>$1</span>] Mensagem enviada com sucesso para <span style='color: blue; font-weight: bold;'>$2</span> (+$3 $4 $5-$6)",
+                        $line
+                    );
                 } elseif (strpos($line, 'Erro ao enviar mensagem') !== false) {
                     // Adiciona a cor vermelha e estilo bold para mensagens de erro
                     $line = "<span style='color: red; font-weight: bold;'>" . htmlspecialchars($line) . "</span>";
