@@ -178,12 +178,20 @@ function excluirAgendamentoEspecifico() {
 if (isset($_POST['intervalo_minutos'])) {
     $intervaloMinutos = (int)$_POST['intervalo_minutos'];
     atualizarCron($intervaloMinutos);
-    echo "<script>alert('Agendamento atualizado para cada $intervaloMinutos minutos!');</script>";
+    echo "<script>
+        alert('Agendamento atualizado para cada $intervaloMinutos minutos!');
+        window.location.href = window.location.href; // Redireciona para a mesma página para limpar o POST
+    </script>";
+    exit;
 }
 
 // Verifica se o formulário de exclusão foi enviado
 if (isset($_POST['delete_schedule'])) {
     excluirAgendamentoEspecifico();
+    echo '<script>
+        window.location.href = window.location.href; // Redireciona para a mesma página
+    </script>';
+    exit;
 }
 
 // Caminho e permissões para o diretório de configurações
@@ -227,13 +235,16 @@ if (isset($_POST['salvar_configuracoes'])) {
         'token' => encriptar($token, $chave_criptografia),
     ];
 
-    $config_content = '<?php return ' . var_export($novas_configuracoes, true) . ';';
-    if (file_put_contents($file_path, $config_content) !== false) {
-        chmod($file_path, 0600);  // Define permissão 0600 para o arquivo
-        echo "<script>alert('Configurações de Token, IP e User salvas com sucesso!');</script>";
-    } else {
-        echo "<script>alert('Erro ao salvar as configurações. Verifique as permissões do diretório.');</script>";
-    }
+$config_content = '<?php return ' . var_export($novas_configuracoes, true) . ';';
+if (file_put_contents($file_path, $config_content) !== false) {
+    chmod($file_path, 0600);  // Define permissão 0600 para o arquivo
+    echo "<script>
+        alert('Configurações de Token, IP e User salvas com sucesso!');
+        window.location.href = window.location.href; // Redireciona para a mesma página para limpar o POST
+    </script>";
+} else {
+    echo "<script>alert('Erro ao salvar as configurações. Verifique as permissões do diretório.');</script>";
+}
 }
 ?>
 
