@@ -146,32 +146,69 @@ if ($recriar_trigger) {
     }
 }
 
+//---------------------------------------------------------------------------------------//
+
 // Caminho para o arquivo temporário do cron
 $cronFilePath = '/tmp/cron_recibo_whatsapp';
 
+// Comando específico para o agendamento
+$comando = "/usr/bin/php -q /opt/mk-auth/admin/addons/Recibo_Whatsapp/enviozap.php >/dev/null 2>&1";
+
 // Função para atualizar o cron com o intervalo especificado
 function atualizarCron($intervaloMinutos) {
-    global $cronFilePath;
-    $comando = "/usr/bin/php -q /opt/mk-auth/admin/addons/Recibo_Whatsapp/enviozap.php >/dev/null 2>&1";
+    global $cronFilePath, $comando;
+    
+    // Lê os agendamentos atuais
+    $agendamentosAtuais = shell_exec("crontab -l");
+    
+    // Remove linhas existentes para o comando específico
+    $agendamentosAtuais = preg_replace("/^.*" . preg_quote($comando, '/') . ".*$/m", '', $agendamentosAtuais);
+    
+    // Adiciona o novo agendamento
     $cronLinha = "*/$intervaloMinutos * * * * $comando" . PHP_EOL;
-    file_put_contents($cronFilePath, $cronLinha);
+    $novoAgendamento = $agendamentosAtuais . $cronLinha;
+    
+    // Salva o novo conteúdo no arquivo temporário
+    file_put_contents($cronFilePath, $novoAgendamento);
+    
+    // Aplica o novo crontab
     exec("crontab $cronFilePath");
 }
 
-// Função para exibir o agendamento atual
+// Função para exibir o agendamento atual do script
 function obterAgendamentoAtual() {
+    global $comando;
+    
+    // Lê os agendamentos atuais
     $output = shell_exec("crontab -l");
-    return $output ? htmlspecialchars($output) : "<span class='no-schedule'>Nenhum agendamento configurado</span>";
+    
+    // Filtra apenas o agendamento relacionado ao comando específico
+    $agendamentosFiltrados = preg_grep("/" . preg_quote($comando, '/') . "/", explode(PHP_EOL, $output));
+    
+    if (empty($agendamentosFiltrados)) {
+        return "<span class='no-schedule'>Nenhum agendamento configurado</span>";
+    }
+    
+    // Retorna os agendamentos em formato seguro para exibição
+    return htmlspecialchars(implode(PHP_EOL, $agendamentosFiltrados));
 }
 
 // Função para excluir apenas o agendamento específico
 function excluirAgendamentoEspecifico() {
-    $output = shell_exec("crontab -l | grep -v '/usr/bin/php -q /opt/mk-auth/admin/addons/Recibo_Whatsapp/enviozap.php >/dev/null 2>&1' | crontab -");
-    if ($output === null) {
-        echo '<script>alert("Agendamento excluído com sucesso.");</script>';
-    } else {
-        echo '<script>alert("Erro ao excluir o agendamento.");</script>';
-    }
+    global $cronFilePath, $comando;
+    
+    // Lê os agendamentos atuais
+    $agendamentosAtuais = shell_exec("crontab -l");
+    
+    // Remove linhas correspondentes ao comando específico
+    $novoAgendamento = preg_replace("/^.*" . preg_quote($comando, '/') . ".*$/m", '', $agendamentosAtuais);
+    
+    // Salva o novo conteúdo no arquivo temporário
+    file_put_contents($cronFilePath, $novoAgendamento);
+    
+    // Aplica o novo crontab
+    exec("crontab $cronFilePath");
+    echo '<script>alert("Agendamento excluído com sucesso.");</script>';
 }
 
 // Verifica se o formulário de intervalo foi enviado
@@ -193,6 +230,8 @@ if (isset($_POST['delete_schedule'])) {
     </script>';
     exit;
 }
+
+//-----------------------------------------------------------------------------------//
 
 // Caminho e permissões para o diretório de configurações
 $dir_path = '/opt/mk-auth/dados/Recibo_Whatsapp';
