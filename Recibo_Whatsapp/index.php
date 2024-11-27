@@ -146,89 +146,80 @@ if ($recriar_trigger) {
     }
 }
 
-//---------------------------------------------------------------------------------------//
-
 // Caminho para o arquivo temporário do cron
 $cronFilePath = '/tmp/cron_recibo_whatsapp';
 
-// Comando específico para o agendamento
-$comando = "/usr/bin/php -q /opt/mk-auth/admin/addons/Recibo_Whatsapp/enviozap.php >/dev/null 2>&1";
-
-// Função para atualizar o cron com o intervalo especificado
-function atualizarCron($intervaloMinutos) {
-    global $cronFilePath, $comando;
+// Função para atualizar o cron com o intervalo especificado para o envio do zap
+function atualizarCronEnvioZap($intervaloMinutos) {
+    global $cronFilePath;
+    $comandoEnvioZap = "/usr/bin/php -q /opt/mk-auth/admin/addons/Recibo_Whatsapp/enviozap.php >/dev/null 2>&1";
     
-    // Lê os agendamentos atuais
-    $agendamentosAtuais = shell_exec("crontab -l");
-    
-    // Remove linhas existentes para o comando específico
-    $agendamentosAtuais = preg_replace("/^.*" . preg_quote($comando, '/') . ".*$/m", '', $agendamentosAtuais);
-    
-    // Adiciona o novo agendamento
-    $cronLinha = "*/$intervaloMinutos * * * * $comando" . PHP_EOL;
-    $novoAgendamento = $agendamentosAtuais . $cronLinha;
-    
-    // Salva o novo conteúdo no arquivo temporário
-    file_put_contents($cronFilePath, $novoAgendamento);
-    
-    // Aplica o novo crontab
+    // Verifica se o agendamento de envio já existe
+    $cronAtual = shell_exec("crontab -l | grep -v '/opt/mk-auth/admin/addons/Recibo_Whatsapp/enviozap.php'");
+    $cronLinhaEnvio = "*/$intervaloMinutos * * * * $comandoEnvioZap" . PHP_EOL;
+    file_put_contents($cronFilePath, $cronAtual . $cronLinhaEnvio);
     exec("crontab $cronFilePath");
 }
 
-// Função para exibir o agendamento atual do script
+// Função para exibir o agendamento atual de envio do zap
 function obterAgendamentoAtual() {
-    global $comando;
-    
-    // Lê os agendamentos atuais
-    $output = shell_exec("crontab -l");
-    
-    // Filtra apenas o agendamento relacionado ao comando específico
-    $agendamentosFiltrados = preg_grep("/" . preg_quote($comando, '/') . "/", explode(PHP_EOL, $output));
-    
-    if (empty($agendamentosFiltrados)) {
-        return "<span class='no-schedule'>Nenhum agendamento configurado</span>";
-    }
-    
-    // Retorna os agendamentos em formato seguro para exibição
-    return htmlspecialchars(implode(PHP_EOL, $agendamentosFiltrados));
+    $output = shell_exec("crontab -l | grep '/usr/bin/php -q /opt/mk-auth/admin/addons/Recibo_Whatsapp/enviozap.php'");
+    return $output ? htmlspecialchars($output) : "<span class='no-schedule'>Nenhum agendamento de envio configurado</span>";
 }
 
-// Função para excluir apenas o agendamento específico
-function excluirAgendamentoEspecifico() {
-    global $cronFilePath, $comando;
-    
-    // Lê os agendamentos atuais
-    $agendamentosAtuais = shell_exec("crontab -l");
-    
-    // Remove linhas correspondentes ao comando específico
-    $novoAgendamento = preg_replace("/^.*" . preg_quote($comando, '/') . ".*$/m", '', $agendamentosAtuais);
-    
-    // Salva o novo conteúdo no arquivo temporário
-    file_put_contents($cronFilePath, $novoAgendamento);
-    
-    // Aplica o novo crontab
-    exec("crontab $cronFilePath");
-    echo '<script>alert("Agendamento excluído com sucesso.");</script>';
+
+// Função para exibir o agendamento atual da limpeza da tabela
+function obterLimpeza() {
+    $output = shell_exec("crontab -l | grep '/usr/bin/php -q /opt/mk-auth/admin/addons/Recibo_Whatsapp/limpar_tabela.php'");
+    return $output ? htmlspecialchars($output) : "<span class='no-schedule'>Nenhum agendamento de limpeza configurado</span>";
 }
 
-// Verifica se o formulário de intervalo foi enviado
+// Função para excluir apenas o agendamento específico de envio do zap
+function excluirAgendamentoEnvioZap() {
+    shell_exec("crontab -l | grep -v '/usr/bin/php -q /opt/mk-auth/admin/addons/Recibo_Whatsapp/enviozap.php' | crontab -");
+    echo '<script>alert("Agendamento de envio excluído com sucesso.");</script>';
+}
+
+// Função para excluir o agendamento de limpeza da tabela
+function excluirAgendamentoLimpeza() {
+    shell_exec("crontab -l | grep -v '/usr/bin/php -q /opt/mk-auth/admin/addons/Recibo_Whatsapp/limpar_tabela.php' | crontab -");
+    echo '<script>alert("Agendamento de limpeza excluído com sucesso.");</script>';
+}
+
+// Verifica se o formulário de intervalo de envio foi enviado
 if (isset($_POST['intervalo_minutos'])) {
     $intervaloMinutos = (int)$_POST['intervalo_minutos'];
-    atualizarCron($intervaloMinutos);
+    atualizarCronEnvioZap($intervaloMinutos);
     echo "<script>
         alert('Agendamento atualizado para cada $intervaloMinutos minutos!');
-        window.location.href = window.location.href; // Redireciona para a mesma página para limpar o POST
+        setTimeout(function() {
+            window.location.href = window.location.href; // Redireciona para limpar o POST
+        }, 100); // Aguarda 100ms antes de redirecionar
     </script>";
-    exit;
+    exit; // Interrompe o restante do código após o redirecionamento
 }
 
-// Verifica se o formulário de exclusão foi enviado
+
+// Verifica se o formulário de exclusão de agendamento de envio foi enviado
 if (isset($_POST['delete_schedule'])) {
-    excluirAgendamentoEspecifico();
+    excluirAgendamentoEnvioZap();
     echo '<script>
-        window.location.href = window.location.href; // Redireciona para a mesma página
+        setTimeout(function() {
+            window.location.href = window.location.href;
+        }, 100); // Aguarda 100ms antes de redirecionar
     </script>';
-    exit;
+    exit; // Garante que o código posterior não seja executado
+}
+
+
+// Verifica se o formulário de exclusão de agendamento de limpeza foi enviado
+if (isset($_POST['delete_clean_schedule'])) {
+    excluirAgendamentoLimpeza();
+    echo '<script>alert("Agendamento de limpeza excluído com sucesso.");</script>';
+    
+    // Redireciona para a mesma página para limpar o POST e evitar reexecução do código
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit; // Garante que o código posterior não seja executado
 }
 
 //-----------------------------------------------------------------------------------//
@@ -351,15 +342,6 @@ if (isset($_POST['salvar_configuracoes'])) {
     .btn-limpar-log {
         background-color: red;
     }
-    .log-container {
-        background-color: #f9f9f9;
-        padding: 20px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        max-height: 300px;
-        overflow-y: scroll;
-        color: blue;
-    }
     /* Estilos para o Modal */
     #modalConfirmacao {
         display: none;
@@ -387,38 +369,38 @@ if (isset($_POST['salvar_configuracoes'])) {
         border-radius: 5px;
         cursor: pointer;
     }
-	    .pagination {
-        display: flex;
-        justify-content: center;
-        margin: 20px 0;
-        list-style: none;
-        padding: 0;
-    }
+	.pagination {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+    list-style: none;
+    padding: 0;
+}
 
-        .pagination li {
-        margin: 0 5px;
-    }
+.pagination li {
+    margin: 0 5px;
+}
 
-       .pagination a,
-       .pagination strong {
-        display: inline-block;
-        padding: 8px 12px;
-        text-decoration: none;
-        border-radius: 5px;
-        color: #333;
-        background-color: #f2f2f2;
-        border: 1px solid #ddd;
-        transition: background-color 0.3s ease;
-    }
+.pagination a,
+.pagination strong {
+    display: inline-block;
+    padding: 8px 12px;
+    text-decoration: none;
+    border-radius: 5px;
+    color: #333;
+    background-color: #f2f2f2;
+    border: 1px solid #ddd;
+    transition: background-color 0.3s ease;
+}
 
-        .pagination a:hover {
-         background-color: #ddd;
-    }
+.pagination a:hover {
+    background-color: #ddd;
+}
 
-        .pagination strong {
-         color: white;
-         background-color: #4CAF50; /* Destaque para a página atual */
-         font-weight: bold;
+.pagination strong {
+    color: white;
+    background-color: #4CAF50; /* Destaque para a página atual */
+    font-weight: bold;
 }
 </style>
 
@@ -439,6 +421,9 @@ if (isset($_POST['salvar_configuracoes'])) {
     <div style="display: flex; align-items: center; justify-content: space-between;">
         <h2>Configurações de Token e IP</h2>
         <div style="display: flex; gap: 10px;">
+            <button id="agendarLimpeza" onclick="toggleSection('agendamentoLimpezaForm')" style="background: none; border: none; cursor: pointer;">
+                <img src="icon_limpar.png" alt="Agendar Limpeza da Tabela" style="width: 30px; height: 30px;">
+            </button>
             <button id="mostrarHorario" class="toggle-button" onclick="toggleSection('agendamentoForm')" style="background: none; border: none; cursor: pointer;">
                 <img src="icon_agen.png" alt="Mostrar Horário" style="width: 30px; height: 30px;">
             </button>
@@ -532,7 +517,86 @@ if (isset($_POST['salvar_configuracoes'])) {
     </div>
 </div>
 
+    <!-- Formulário de Configuração para Agendamento da Limpeza da Tabela -->
+<div id="agendamentoLimpezaForm" class="config-section" style="display: none; max-width: 1000px; margin: 20px auto; padding: 25px; border-radius: 15px; background: #ffffff; box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.15);">
+    <h3 style="text-align: center; color: #4CAF50; font-size: 1.5em; font-weight: bold; margin-bottom: 20px;">Agendamento de Limpeza da Tabela</h3>
+
+    <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 20px;">
+        <button form="agendarLimpezaForm" type="submit" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; font-size: 1em; font-weight: bold; color: white; background-color: #4CAF50; border: none; border-radius: 50px; cursor: pointer; transition: all 0.3s ease;">
+            <i class="fa fa-save"></i> Salvar
+        </button>
+        
+        <form method="post" style="margin: 0;">
+            <input type="hidden" name="delete_clean_schedule" value="1">
+            <button type="submit" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; background-color: #e74c3c; color: white; font-size: 1em; font-weight: bold; border: none; border-radius: 50px; cursor: pointer; transition: all 0.3s ease;" onclick="return confirm('Tem certeza que deseja excluir o agendamento de limpeza?');">
+                <i class="fa fa-trash"></i> Excluir
+            </button>
+        </form>
+    </div>
+
+    <form id="agendarLimpezaForm" method="post" action="agendar_limpeza.php" style="display: flex; flex-direction: column; gap: 15px;">
+        <label for="hora_execucao" style="font-size: 1.1em; color: #333; font-weight: 600;">Hora de Execução:</label>
+        <input type="time" id="hora_execucao" name="hora_execucao" required style="padding: 12px; font-size: 1.1em; border: 1px solid #ddd; border-radius: 8px; background-color: #f8f8f8;">
+        
+        <label for="intervalo_dias" style="font-size: 1.1em; color: #333; font-weight: 600;">Intervalo de Dias:</label>
+        <input type="number" id="intervalo_dias" name="intervalo_dias" min="1" value="30" required style="padding: 12px; font-size: 1.1em; border: 1px solid #ddd; border-radius: 8px; background-color: #f8f8f8;">
+    </form>
+
+    <div class="cron-display" style="margin-top: 20px; padding: 15px; text-align: center; border-radius: 8px; background-color: #f7f9fb; border: 1px solid #ddd;">
+        <strong style="color: #4CAF50; font-size: 1.1em;">Agendamento Atual de Limpeza:</strong><br>
+        <?php echo obterLimpeza(); ?>
+    </div>
+</div>
+
+</div>
+<!-- Modal de Confirmação -->
+<div id="modalConfirmacao2" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div style="background-color: #fff; padding: 20px; border-radius: 8px; max-width: 300px; margin: 100px auto; text-align: center;">
+        <p id="modalMessage"></p>
+        <button onclick="fecharModal()" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">OK</button>
+    </div>
+</div>
 <script>
+document.getElementById("agendarLimpezaForm").addEventListener("submit", function(event) {
+    event.preventDefault();
+
+    const formData = new FormData(this);
+
+    fetch("agendar_limpeza.php", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            document.getElementById("modalMessage").textContent = data.message;
+            document.getElementById("modalConfirmacao2").style.display = "block";
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => alert("Erro ao agendar a limpeza: " + error));
+});
+
+function fecharModal() {
+    document.getElementById("modalConfirmacao2").style.display = "none";
+}
+</script>
+
+<script>
+function limparTabela() {
+    if (confirm('Tem certeza que deseja limpar a tabela? Esta ação é irreversível.')) {
+        $.post("limpar_tabela.php")
+            .done(function(response) {
+                alert(response); // Mostra a resposta do PHP
+                location.reload(); // Recarrega a página após a limpeza
+            })
+            .fail(function() {
+                alert("Erro ao limpar a tabela. Tente novamente.");
+            });
+    }
+}
+
     function toggleSection(sectionId) {
         const section = document.getElementById(sectionId);
         section.style.display = section.style.display === 'none' ? 'block' : 'none';
@@ -644,6 +708,7 @@ echo '</ul>';
 $conn->close();
 ?>
 
+
 </div>
 
 <div class="container">
@@ -662,33 +727,47 @@ $conn->close();
 <div class="container" style="background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; border-radius: 5px; max-height: 300px; overflow-y: scroll; color: blue;">
     <pre><?php
         $logFile = '/opt/mk-auth/dados/Recibo_Whatsapp/log_pagamentos.txt';
+
         if (file_exists($logFile)) {
             // Lê o conteúdo do arquivo e o divide em linhas
             $logContent = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
             // Inverte a ordem das linhas para que as mais recentes fiquem no topo
             $logContent = array_reverse($logContent);
-            
+
             // Formata cada linha do log
             foreach ($logContent as &$line) {
                 if (strpos($line, 'Mensagem enviada com sucesso') !== false) {
-                    // Adiciona a cor verde e estilo bold para as mensagens enviadas com sucesso
+                    // Mensagens enviadas com sucesso - cor verde e bold
                     $line = "<span style='color: green; font-weight: bold;'>" . htmlspecialchars($line) . "</span>";
-                    
-                    // Adiciona cor darkcyan para a data, azul para o nome do cliente, e darkslateblue para o número de telefone no formato desejado
+
+                    // Formatação para data, cliente e telefone
                     $line = preg_replace(
                         "/\[(\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2})\] Mensagem enviada com sucesso para (.+?) \((\d{2})(\d{2})(\d{5})(\d{4})\)/",
                         "[<span style='color: darkcyan; font-weight: bold;'>$1</span>] Mensagem enviada com sucesso para <span style='color: blue; font-weight: bold;'>$2</span> (+$3 $4 $5-$6)",
                         $line
                     );
                 } elseif (strpos($line, 'Erro ao enviar mensagem') !== false) {
-                    // Adiciona a cor vermelha e estilo bold para mensagens de erro
+                    // Mensagens de erro - cor vermelha e bold
                     $line = "<span style='color: red; font-weight: bold;'>" . htmlspecialchars($line) . "</span>";
+                } elseif (strpos($line, 'Registros com mais') !== false) {
+                    // Formatação para mensagens "Registros com mais"
+                    $line = preg_replace_callback(
+                        "/\[(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})\]/",
+                        function ($matches) {
+                            return "[<span style='color: darkcyan; font-weight: bold;'>" .
+                                $matches[3] . "/" . $matches[2] . "/" . $matches[1] . " " .
+                                $matches[4] . ":" . $matches[5] . ":" . $matches[6] . "</span>]";
+                        },
+                        htmlspecialchars($line)
+                    );
+                    $line = "<strong>" . $line . "</strong>";
                 } else {
-                    // Coloca todas as outras linhas em bold
+                    // Outras linhas - estilo bold
                     $line = "<strong>" . htmlspecialchars($line) . "</strong>";
                 }
             }
-            
+
             // Exibe o conteúdo formatado
             echo implode("\n", $logContent);
         } else {
