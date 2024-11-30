@@ -105,18 +105,20 @@ $conn->commit();
 $trigger_nome = 'tig_brl_pag';
 $trigger_sql_esperado = "
 BEGIN
-    IF NEW.status = 'pago' 
+    IF NEW.status = 'pago'
        AND EXISTS (
            SELECT 1 
            FROM sis_cliente 
            WHERE login = NEW.login 
              AND zap <> 'nao' 
              AND cli_ativado <> 'n'
-       ) THEN
+       )
+       AND DATE(NEW.datapag) = DATE(NOW()) THEN
         INSERT INTO brl_pago (id, data, login, coletor, datavenc, datapag, valor, valorpag, formapag)
         VALUES (NEW.id, NOW(), NEW.login, NEW.coletor, NEW.datavenc, NEW.datapag, NEW.valor, NEW.valorpag, NEW.formapag);
     END IF;
 END";
+
 
 // Verifica se o trigger existe e está correto
 $trigger_existe = $conn->query("SELECT ACTION_STATEMENT FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '$db' AND TRIGGER_NAME = '$trigger_nome'");
