@@ -627,15 +627,14 @@ $total_registros = $conn->query("SELECT COUNT(*) as total FROM brl_pago")->fetch
 $total_paginas = ceil($total_registros / $resultados_por_pagina);
 
 // Consulta com limite e offset para paginação
-$sql = "SELECT id, data, login, coletor, datavenc, datapag, valor, valorpag, formapag, envio 
-        FROM brl_pago ORDER BY data DESC LIMIT ? OFFSET ?";
+$sql = "SELECT brl_pago.id, brl_pago.data, brl_pago.login, brl_pago.coletor, brl_pago.datavenc, brl_pago.datapag, brl_pago.valor, brl_pago.valorpag, brl_pago.formapag, brl_pago.envio, sis_cliente.uuid_cliente FROM brl_pago JOIN sis_cliente ON brl_pago.login = sis_cliente.login ORDER BY brl_pago.data DESC LIMIT ? OFFSET ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("ii", $resultados_por_pagina, $inicio);
 
 if ($stmt) {
     // Executa a consulta preparada
     $stmt->execute();
-    $stmt->bind_result($id, $data, $login, $coletor, $datavenc, $datapag, $valor, $valorpag, $formapag, $envio);
+    $stmt->bind_result($id, $data, $login, $coletor, $datavenc, $datapag, $valor, $valorpag, $formapag, $envio, $uuid_cliente);
 
     // Começa a renderizar a tabela
     echo "<table>
@@ -672,7 +671,9 @@ if ($stmt) {
         echo "<tr style='$textoCor'>
                 <td>" . htmlspecialchars($id) . "</td>
                 <td>" . htmlspecialchars($dataFormatada) . "</td>
-                <td>" . htmlspecialchars($login) . "</td>
+                <td>
+                <a href=\"/admin/cliente_alt.hhvm?uuid=" . urlencode($uuid_cliente) . "\" class=\"login-link\" target=\"_blank\" style=\"$textoCor\">" . htmlspecialchars($login) . "</a>
+                </td>
                 <td>" . htmlspecialchars($coletor) . "</td>
                 <td>" . htmlspecialchars($datapagFormatada) . "</td>
                 <td>" . htmlspecialchars($datavencFormatada) . "</td>
