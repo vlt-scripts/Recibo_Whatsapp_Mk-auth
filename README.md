@@ -39,6 +39,21 @@ sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.php-fpm7.3
 ```
 sudo service php7.3-fpm restart
 ```
+# Correção MK-auth V25.01
+
+6. Vá para o diretório /etc/apparmor.d/apache2.d e abra o arquivo admin
+
+7. Adicione estas linha no arquivo:
+
+        #Addon Recibo Whatsapp
+        /var/spool/cron/crontabs/** rw,
+		
+8. Recarregue o AppArmor para aplicar as mudanças		
+		
+```
+sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.apache2
+```
+#
 
 eu usei como base para esse addon o codigo Membro do Forum, 
 
@@ -49,3 +64,6 @@ e modifiquei para usar com a api
 https://mk-auth.com.br/forum/topics/envio-de-mensagem-via-whatsapp-100-gratuito
 
 
+#
+
+https://mk-auth.com.br/forum/topics/contribuicao-de-alguns-addons
