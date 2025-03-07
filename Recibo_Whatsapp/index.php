@@ -371,16 +371,19 @@ if (isset($_POST['salvar_configuracoes'])) {
         border-radius: 5px;
         cursor: pointer;
     }
-	.pagination {
+.pagination {
     display: flex;
     justify-content: center;
-    margin: 20px 0;
+    flex-wrap: wrap; /* Permite quebrar linha se necessário */
+    gap: 5px;
+    padding: 10px;
     list-style: none;
-    padding: 0;
+    max-width: 100%; /* Limita a largura máxima */
+    overflow-x: auto; /* Adiciona rolagem se for necessário */
 }
 
 .pagination li {
-    margin: 0 5px;
+    display: inline-block;
 }
 
 .pagination a,
