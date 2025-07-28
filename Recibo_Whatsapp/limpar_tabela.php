@@ -1,6 +1,6 @@
 <?php
 // Configurações de conexão com o banco de dados usando variáveis de ambiente para evitar exposição direta das credenciais
-$host = getenv('DB_HOST') ?: 'localhost';
+$host = getenv('DB_HOST') ?: '127.0.0.1';
 $usuario = getenv('DB_USER') ?: 'root';
 $senha = getenv('DB_PASS') ?: 'vertrigo';
 $db = getenv('DB_NAME') ?: 'mkradius';

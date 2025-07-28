@@ -25,7 +25,7 @@ if (file_exists($configFile)) {
 }
 
 // Configurações do banco de dados
-$host = "localhost";
+$host = "127.0.0.1";
 $usuario = "root";
 $senha = "vertrigo";
 $db = "mkradius";

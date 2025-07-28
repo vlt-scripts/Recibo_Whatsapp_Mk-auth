@@ -11,7 +11,7 @@ $manifestTitle = isset($Manifest->name) ? htmlspecialchars($Manifest->name) : ''
 $manifestVersion = isset($Manifest->version) ? htmlspecialchars($Manifest->version) : '';
 
 // Configurações do banco de dados
-$host = "localhost";
+$host = "127.0.0.1";
 $usuario = "root";
 $senha = "vertrigo";
 $db = "mkradius";
