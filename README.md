@@ -39,7 +39,7 @@ sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.php-fpm7.3
 ```
 sudo service php7.3-fpm restart
 ```
-# Correção MK-auth V25.01
+# Correção Agendamento MK-auth V25.01
 
 6. Vá para o diretório /etc/apparmor.d/apache2.d e abra o arquivo admin
 
@@ -52,6 +52,24 @@ sudo service php7.3-fpm restart
 		
 ```
 sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.apache2
+```
+#
+
+# Correção Agendamento MK-auth V25.05
+Obs: Aparentemente na ultima versão só precisa dar permissão para o agendamento, resto esta funcionando normalmente.
+
+9. Vá para o diretório /etc/apparmor.d e abra o arquivo sistema.php-central
+
+10. Adicione estas linha no arquivo:
+
+        #Addon Recibo Whatsapp
+        /var/spool/cron/crontabs/tmp.* rw,
+        /var/spool/cron/crontabs/www-data rw,
+		
+11. Recarregue o AppArmor para aplicar as mudanças		
+		
+```
+sudo apparmor_parser -r /etc/apparmor.d/sistema.php-central
 ```
 #
 
